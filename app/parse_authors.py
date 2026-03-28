@@ -44,10 +44,10 @@ def get_authors_urls_per_page(page_soup: BeautifulSoup) -> list:
     return authors_urls
 
 
-def get_all_authors_urls() -> list:
+def get_all_authors_urls() -> set:
     response = requests.get(BASE_URL).content
     page_soup = BeautifulSoup(response, "html.parser")
-    all_authors_urls = get_authors_urls_per_page(page_soup)
+    all_authors_urls = set(get_authors_urls_per_page(page_soup))
 
     next_tag = page_soup.select_one("li.next a")
     pagination = next_tag["href"] if next_tag else None
@@ -56,7 +56,7 @@ def get_all_authors_urls() -> list:
         new_url = urljoin(BASE_URL, pagination)
         response = requests.get(new_url).content
         new_page_soup = BeautifulSoup(response, "html.parser")
-        all_authors_urls.extend(get_authors_urls_per_page(new_page_soup))
+        all_authors_urls.update(get_authors_urls_per_page(new_page_soup))
         next_tag = new_page_soup.select_one("li.next a")
         pagination = next_tag["href"] if next_tag else None
 
@@ -71,9 +71,9 @@ def get_all_authors() -> list:
     return all_authors
 
 
-def write_authors_to_csv(authors: list[Author]) -> None:
+def write_authors_to_csv(authors: list[Author], authors_csv: str) -> None:
     with open(
-            "authors_csv.csv",
+            authors_csv,
             "w",
             encoding="utf-8",
             newline=""

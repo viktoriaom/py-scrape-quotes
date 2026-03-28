@@ -39,16 +39,15 @@ def get_paginated_pages() -> list[Quote]:
     response = requests.get(BASE_URL).content
     page_soup = BeautifulSoup(response, "html.parser")
     all_quotes = get_quotes_per_page(page_soup)
-    try:
-        pagination = page_soup.select_one("li.next a")["href"]
-        while pagination is not None:
-            new_url = urljoin(BASE_URL, pagination)
-            response = requests.get(new_url).content
-            new_page_soup = BeautifulSoup(response, "html.parser")
-            all_quotes.extend(get_quotes_per_page(new_page_soup))
-            pagination = new_page_soup.select_one("li.next a")["href"]
-    except TypeError:
-        pass
+    pagination = page_soup.select_one("li.next a")
+    while pagination is not None:
+        next_tag = pagination["href"]
+        new_url = urljoin(BASE_URL, next_tag)
+        response = requests.get(new_url).content
+        new_page_soup = BeautifulSoup(response, "html.parser")
+        all_quotes.extend(get_quotes_per_page(new_page_soup))
+        pagination = new_page_soup.select_one("li.next a")
+
     return all_quotes
 
 
@@ -60,8 +59,11 @@ def write_quotes_to_csv(quotes: list[Quote], output_csv_path: str) -> None:
 
 
 def main(output_csv_path: str) -> None:
-    write_quotes_to_csv(get_paginated_pages(), output_csv_path)
-    write_authors_to_csv(get_all_authors())
+    quotes_csv = output_csv_path
+    authors_csv = f"authors_{output_csv_path}"
+
+    write_quotes_to_csv(get_paginated_pages(), quotes_csv)
+    write_authors_to_csv(get_all_authors(), authors_csv)
 
 
 if __name__ == "__main__":
